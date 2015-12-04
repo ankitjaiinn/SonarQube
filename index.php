@@ -29,7 +29,7 @@ class Sonar {
 	// Example value: BLOCKER,CRITICAL
 	protected $severities;
 
-	protected $columns = array('summary' => 1);
+	protected $columns;
 
 	private $response;
 	
@@ -44,7 +44,7 @@ class Sonar {
 		$this->api_url = "http://{$this->api_host}:{$this->api_port}/api/";
 		$this->project_key = $project_key;
 		$this->severities = implode(',', $severities);
-		$this->columns = array_merge(array_flip($columns), $this->columns);
+		$this->columns = array_flip($columns);
 	}
 	
 
@@ -77,9 +77,9 @@ class Sonar {
 			fputcsv($fp, array_keys($this->columns));
 		}	
 		foreach ($this->response['issues'] as $issues) {
-			$issues['component'] = str_replace("{$this->project_key}:", "", $issues['component']);
+			$issues['component'] = str_replace("{$this->project_key}:Code/", "", $issues['component']);
 			$line = (isset($issues['line'])) ? 'Line: ' . $issues['line'] : '';
-			$issues['summary'] = 'Severity: ' . $issues['severity'] . "\n" . $issues['message'] . "\n" . $line;
+			$issues['summary'] = $issues['message'] . "\n" . $line;
 			fputcsv($fp, array_intersect_key($issues, $this->columns));
 		}
 		fclose($fp);
@@ -97,9 +97,9 @@ class Sonar {
 			fputcsv($fp, array_keys($this->columns));
 		}
 		foreach ($this->response['issues'] as $issues) {
-			$issues['component'] = str_replace("{$this->project_key}:", "", $issues['component']);
+			$issues['component'] = str_replace("{$this->project_key}:Code/", "", $issues['component']);
 			$line = (isset($issues['line'])) ? 'Line: ' . $issues['line'] : '';
-			$issues['summary'] = 'Severity: ' . $issues['severity'] . "\n" . $issues['message'] . "\n" . $line;
+			$issues['summary'] = $issues['message'] . "\n" . $line;
 			fputcsv($fp, array_intersect_key($issues, $this->columns));
 		}
 		fclose($fp);
@@ -146,7 +146,7 @@ if (isset($_POST['submit'])) {
 			$success = $obj_sonar->getIssues(1)->downloadReport()->process();
 			$project_key = $sonarqube_host = $sonarqube_port = '';
 			$severities = array('INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER');
-			$columns = array('component', 'severity', 'message');
+			$columns = array('component', 'severity', 'message', 'summary');
 		} catch(Exception $e) {
 			$error[] = $e->getMessage();
 		}
@@ -154,7 +154,7 @@ if (isset($_POST['submit'])) {
 } else {
 	$project_key = $sonarqube_host = $sonarqube_port = '';
 	$severities = array('INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER');
-	$columns = array('component', 'severity', 'message');
+	$columns = array('component', 'severity', 'message', 'summary');
 }
 
 ?>
@@ -168,7 +168,7 @@ if (isset($_POST['submit'])) {
 <style>
 
 body {
-  width: 60%;
+  width: 70%;
   margin: 20px auto;
 }
 
@@ -245,10 +245,13 @@ body {
 				  <input type="checkbox" name="columns[]" value="severity" <?php echo (in_array('severity', $columns)) ? 'checked' : '' ?>> SEVERITY
 				</label>
 				<label class="checkbox-inline">
+				  <input type="checkbox" name="columns[]" value="message" <?php echo (in_array('message', $columns)) ? 'checked' : '' ?>> MESSAGE
+				</label>
+				<label class="checkbox-inline">
 				  <input type="checkbox" name="columns[]" value="line" <?php echo (in_array('line', $columns)) ? 'checked' : '' ?>> LINE
 				</label>
 				<label class="checkbox-inline">
-				  <input type="checkbox" name="columns[]" value="message" <?php echo (in_array('message', $columns)) ? 'checked' : '' ?>> MESSAGE
+				  <input type="checkbox" name="columns[]" value="summary" <?php echo (in_array('summary', $columns)) ? 'checked' : '' ?>> SUMMARY
 				</label>
 			 </div>
 		</div>
